@@ -11,7 +11,7 @@ from config import group_token, user_token
 class BotMsg():
     '''Сообщения бота для пользователя'''
     misunderstand: str = 'Я вас не понимаю.'
-    start: str = 'Привет %s! Начнем поиск? Или посмотрим кто у нас уже есть?'
+    start: str = 'Привет %s! Начнем поиск? Или взглянем кто там у нас уже есть?'
     criterions: str = 'Выберите критерии поиска'
     again: str = 'Начнём сначала?'
     city: str = 'Введите название города:'
