@@ -10,7 +10,7 @@ from vk_info import user_token, group_token
 # Класс Base
 Base = declarative_base()
 
-DSN = 'postgresql://slava:7548@localhost:5432/db_vk_person'
+DSN = 'postgresql://postgres:slava@localhost:7548/db_vk_person'
 
 # Функциональное использование ORM
 engine = sq.create_engine(DSN)
