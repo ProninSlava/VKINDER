@@ -84,7 +84,7 @@ class Second_half(Base):
     year = sq.Column(sq.Integer, unique=True)
     city = sq.Column(sq.String)
     link = sq.Column(sq.String)
-    id_user = sq.Column(sq.Integer, sq.ForeignKey('user.id', ondelete='CASCADE'))
+    id_user = sq.Column(sq.Integer, sq.ForeignKey('users.id', ondelete='CASCADE'))
 
 # Фото
 class Photos(Base):
@@ -105,7 +105,7 @@ class Blakc_list(Base):
     year = sq.Column(sq.Integer, unique=True)
     city = sq.Column(sq.String)
     link = sq.Column(sq.String)
-    id_user = sq.Column(sq.Integer, sq.ForeignKey('user.id', ondelete='CASCADE'))
+    id_user = sq.Column(sq.Integer, sq.ForeignKey('users.id', ondelete='CASCADE'))
 
 # Функции______________________________________
 
