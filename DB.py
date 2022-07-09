@@ -27,10 +27,7 @@ connection = engine.connect()
 # Таблицы
 # CREATE TABLE IF NOT EXISTS users(
 # id SERIAL PRIMARY KEY,
-# vk_id INTEGER,
-# year INTEGER,
-# gender VARCHAR(40) NOT null,
-# city VARCHAR(40) NOT null
+# vk_id INTEGER
 # );
 #
 # CREATE TABLE IF NOT EXISTS second_half(
@@ -69,9 +66,6 @@ class User(Base):
     __tablename__ = 'users'
     id = sq.Column(sq.Integer, primary_key=True, autoincrement=True)
     vk_id = sq.Column(sq.Integer, unique=True)
-    year = sq.Column(sq.Integer, unique=True)
-    gender = sq.Column(sq.Integer, unique=True)
-    city = sq.Column(sq.String)
 
 # Информация о второй половинке добавленная в избранное
 class Second_half(Base):
