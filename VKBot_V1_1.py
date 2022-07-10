@@ -19,6 +19,10 @@ class BotMsg():
     leaving: tuple = ('goodbye', 'пока', 'end', 'конец')
     city: str = 'Введите название города:'
     city_error: str = 'Город не найден. Попробуйте ещё раз:'
+    sex: str = 'Выберите интересующий вас пол:'
+    sex_again: str = 'Нажмите кнопку выбора пола'
+    boy: str = 'Выбраны мальчики'
+    girl: str = 'Выбраны девочки'
 
 class VKinder():
     
@@ -63,6 +67,13 @@ class VKinder():
         start_keyboard.add_button('Избранное', VkKeyboardColor.PRIMARY)
         start_keyboard = start_keyboard.get_keyboard()
         return start_keyboard
+    
+    def set_sex_keyboard(self):
+        sex_keyboard = VkKeyboard(one_time=True)
+        sex_keyboard.add_button('Он', VkKeyboardColor.PRIMARY)
+        sex_keyboard.add_button('Она', VkKeyboardColor.POSITIVE)
+        sex_keyboard = sex_keyboard.get_keyboard()
+        return sex_keyboard
         
    
     def handle_start_event(self, event):
@@ -115,11 +126,14 @@ class VKinder():
                 if message == 'назад':
                     self.send_msg(user_id, BotMsg.again, keyboard=self.set_start_keyboard())
                     return
+                
                 elif message == 'выбрать город':
-                    self.get_city_id(user_id) 
-    
+                    self.get_city_id(user_id)
+                
+                elif message == 'выбрать пол':
+                    self.get_sex(user_id)
+                    
     def get_city_id(self, user_id):
-        
         self.send_msg(user_id, BotMsg.city, keyboard=self.set_search_keyboard())
         for event in self.longpoll.listen():
             if VKinder.is_message_to_bot(event):
@@ -136,6 +150,21 @@ class VKinder():
                 else:
                     self.send_msg(user_id, f'Выбран город: {event.text.capitalize()}')
                     return city_result[0].get('id')
+    
+    def get_sex(self, user_id):
+        self.send_msg(user_id, BotMsg.sex, keyboard=self.set_sex_keyboard())
+        for event in self.longpoll.listen():
+            if VKinder.is_message_to_bot(event):
+                if event.text == 'Он':
+                    self.send_msg(user_id, BotMsg.boy, keyboard=self.set_search_keyboard())
+                    return event.text
+                elif event.text == 'Она':
+                    self.send_msg(user_id, BotMsg.girl, keyboard=self.set_search_keyboard())
+                    return event.text
+                else:
+                    self.send_msg(user_id, BotMsg.sex_again, keyboard=self.set_sex_keyboard())
+
+    
 
             
     
