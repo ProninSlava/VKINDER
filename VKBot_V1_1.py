@@ -25,7 +25,7 @@ class VKinder():
         self.group_get_api = group_api.get_api()
         self.user_api = user_api
         self.longpoll = VkLongPoll(self.group_api)
-        #self.db_session = для подключения БД
+        #self.db_session = для активации подключения БД
         
         for event in self.longpoll.listen():
             self.handle_start_event(event)
@@ -43,13 +43,18 @@ class VKinder():
             'keyboard': keyboard 
         }     
         self.group_api.method('messages.send', params)
-        
-
-    
+   
     def handle_start_event(self, event):
+        '''Функция отрабатывает стартовые сообщения от пользователя бота
+           Если пользователь здоровается или прощается показывает или скрывает меню.
+           Если сообщение от пользователя не опознано - тоже показывает меню'''
         if VKinder.is_message_to_bot(event):
             message = event.text.lower()
             user_id = event.user_id
+            
+            # где то тут когда пользователь что либо написал - нужно 
+            # сначала проверить если ли он в бд - если есть написать с возвращением
+            # если нет - доюавить его в бд
 
             if message in BotMsg.greetings:
                 user_name = self.group_get_api.users.get(user_id=user_id)[0]['first_name']
