@@ -17,6 +17,8 @@ class BotMsg():
     city: str = 'Введите название города:'
     greetings: tuple = ('start', 'старт', 'hello', 'hi', 'привет', 'хай', 'ку')
     leaving: tuple = ('goodbye', 'пока', 'end', 'конец')
+    city: str = 'Введите название города:'
+    city_error: str = 'Город не найден. Попробуйте ещё раз:'
 
 class VKinder():
     
@@ -30,7 +32,6 @@ class VKinder():
         for event in self.longpoll.listen():
             self.handle_start_event(event)
     
-    @staticmethod
     def is_message_to_bot(event):
         return event.type == VkEventType.MESSAGE_NEW and event.to_me
     
@@ -55,6 +56,14 @@ class VKinder():
         search_keyboard.add_button('Назад', VkKeyboardColor.PRIMARY)
         search_keyboard = search_keyboard.get_keyboard()
         return search_keyboard
+    
+    def set_start_keyboard(self):
+        start_keyboard = VkKeyboard()
+        start_keyboard.add_button('Поиск!', VkKeyboardColor.PRIMARY)
+        start_keyboard.add_button('Избранное', VkKeyboardColor.PRIMARY)
+        start_keyboard = start_keyboard.get_keyboard()
+        return start_keyboard
+        
    
     def handle_start_event(self, event):
         '''Функция отрабатывает стартовые сообщения от пользователя бота
@@ -70,11 +79,7 @@ class VKinder():
 
             if message in BotMsg.greetings:
                 user_name = self.group_get_api.users.get(user_id=user_id)[0]['first_name']
-                start_keyboard = VkKeyboard()
-                start_keyboard.add_button('Поиск!', VkKeyboardColor.PRIMARY)
-                start_keyboard.add_button('Избранное', VkKeyboardColor.PRIMARY)
-                start_keyboard = start_keyboard.get_keyboard()
-                self.send_msg(user_id, BotMsg.start % user_name, keyboard=start_keyboard)
+                self.send_msg(user_id, BotMsg.start % user_name, keyboard=self.set_start_keyboard())
                 return
             
             elif message in BotMsg.leaving:
@@ -84,11 +89,12 @@ class VKinder():
                 return
             
             elif message == 'поиск!':
-                self.set_search_params(event)
-                
-            
+                self.set_search_params(user_id)
+                return
+                   
             elif message == 'избранное':
                 self.send_msg(user_id, 'Не готово!')
+                return
             
             else:
                 user_name = self.group_get_api.users.get(user_id=user_id)[0]['first_name']
@@ -99,13 +105,38 @@ class VKinder():
                 self.send_msg(user_id, BotMsg.misunderstand % user_name, keyboard=start_keyboard)
                 return
         
-    def set_search_params(self, event):
-         if VKinder.is_message_to_bot(event):
-            message = event.text.lower()
-            user_id = event.user_id
-            
-            self.send_msg(user_id, 'Скоро начнем!', keyboard=self.set_search_keyboard())
-            
-           
+    def set_search_params(self, user_id):
+        self.send_msg(user_id, 'Скоро начнем!', keyboard=self.set_search_keyboard())
+        for event in self.longpoll.listen():
+            if VKinder.is_message_to_bot(event):
+                message = event.text.lower()
+                user_id = event.user_id
+                
+                if message == 'назад':
+                    self.send_msg(user_id, BotMsg.again, keyboard=self.set_start_keyboard())
+                    return
+                elif message == 'выбрать город':
+                    self.get_city_id(user_id) 
+    
+    def get_city_id(self, user_id):
+        
+        self.send_msg(user_id, BotMsg.city, keyboard=self.set_search_keyboard())
+        for event in self.longpoll.listen():
+            if VKinder.is_message_to_bot(event):
+                city_param = {
+                    'q': event.text,
+                    'country_id': 1,
+                    'count': 1,
+                    'v': 5.131
+                }
 
+                city_result = self.user_api.method('database.getCities', city_param).get('items')
+                if not city_result:
+                    self.send_msg(user_id, BotMsg.city_error)
+                else:
+                    self.send_msg(user_id, f'Выбран город: {event.text.capitalize()}')
+                    return city_result[0].get('id')
+
+            
+    
     
