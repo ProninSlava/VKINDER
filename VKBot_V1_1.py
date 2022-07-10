@@ -43,6 +43,18 @@ class VKinder():
             'keyboard': keyboard 
         }     
         self.group_api.method('messages.send', params)
+
+    def set_search_keyboard(self):
+        search_keyboard = VkKeyboard()
+        search_keyboard.add_button('Выбрать город', VkKeyboardColor.PRIMARY)
+        search_keyboard.add_button('Выбрать пол', VkKeyboardColor.PRIMARY)
+        search_keyboard.add_button('Искать!', VkKeyboardColor.PRIMARY)
+        search_keyboard.add_line()
+        search_keyboard.add_button('Возраст от', VkKeyboardColor.PRIMARY)
+        search_keyboard.add_button('Возраст до', VkKeyboardColor.PRIMARY)
+        search_keyboard.add_button('Назад', VkKeyboardColor.PRIMARY)
+        search_keyboard = search_keyboard.get_keyboard()
+        return search_keyboard
    
     def handle_start_event(self, event):
         '''Функция отрабатывает стартовые сообщения от пользователя бота
@@ -52,9 +64,9 @@ class VKinder():
             message = event.text.lower()
             user_id = event.user_id
             
-            # где то тут когда пользователь что либо написал - нужно 
+            # где то тут когда пользователь что-либо написал - нужно 
             # сначала проверить если ли он в бд - если есть написать с возвращением
-            # если нет - доюавить его в бд
+            # если нет - добавить его в бд
 
             if message in BotMsg.greetings:
                 user_name = self.group_get_api.users.get(user_id=user_id)[0]['first_name']
@@ -65,11 +77,18 @@ class VKinder():
                 self.send_msg(user_id, BotMsg.start % user_name, keyboard=start_keyboard)
                 return
             
-            if message in BotMsg.leaving:
+            elif message in BotMsg.leaving:
                 leave_keyboard = VkKeyboard()
                 leave_keyboard = leave_keyboard.get_empty_keyboard()
                 self.send_msg(user_id, 'Пока!', keyboard=leave_keyboard)
                 return
+            
+            elif message == 'поиск!':
+                self.set_search_params(event)
+                
+            
+            elif message == 'избранное':
+                self.send_msg(user_id, 'Не готово!')
             
             else:
                 user_name = self.group_get_api.users.get(user_id=user_id)[0]['first_name']
@@ -80,6 +99,13 @@ class VKinder():
                 self.send_msg(user_id, BotMsg.misunderstand % user_name, keyboard=start_keyboard)
                 return
         
+    def set_search_params(self, event):
+         if VKinder.is_message_to_bot(event):
+            message = event.text.lower()
+            user_id = event.user_id
             
+            self.send_msg(user_id, 'Скоро начнем!', keyboard=self.set_search_keyboard())
+            
+           
 
     
