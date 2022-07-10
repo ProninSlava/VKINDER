@@ -10,15 +10,15 @@ from config import group_token, user_token
 @dataclass(frozen=True)
 class BotMsg():
     '''Сообщения бота для пользователя'''
-    misunderstand: str = 'Я вас не понимаю.'
+    misunderstand: str = 'Я вас не понял %s. Но давайте покажу вам меню!'
     start: str = 'Привет %s! Начнем поиск? Или взглянем кто там у нас уже есть?'
     criterions: str = 'Выберите критерии поиска'
     again: str = 'Начнём сначала?'
     city: str = 'Введите название города:'
+    greetings: tuple = ('start', 'старт', 'hello', 'hi', 'привет', 'хай', 'ку')
+    leaving: tuple = ('goodbye', 'пока', 'end', 'конец')
 
 class VKinder():
-    
-    greetings = ['start', 'hello', 'hi', 'привет', 'хай', 'ку']
     
     def __init__(self, group_api, user_api):
         self.group_api = group_api
@@ -28,7 +28,7 @@ class VKinder():
         #self.db_session = для подключения БД
         
         for event in self.longpoll.listen():
-            self.handle_event(event)
+            self.handle_start_event(event)
     
     @staticmethod
     def is_message_to_bot(event):
@@ -46,17 +46,35 @@ class VKinder():
         
 
     
-    def handle_event(self, event):
+    def handle_start_event(self, event):
         if VKinder.is_message_to_bot(event):
             message = event.text.lower()
             user_id = event.user_id
 
-            if message in VKinder.greetings:
+            if message in BotMsg.greetings:
                 user_name = self.group_get_api.users.get(user_id=user_id)[0]['first_name']
                 start_keyboard = VkKeyboard()
                 start_keyboard.add_button('Поиск!', VkKeyboardColor.PRIMARY)
                 start_keyboard.add_button('Избранное', VkKeyboardColor.PRIMARY)
                 start_keyboard = start_keyboard.get_keyboard()
                 self.send_msg(user_id, BotMsg.start % user_name, keyboard=start_keyboard)
+                return
+            
+            if message in BotMsg.leaving:
+                leave_keyboard = VkKeyboard()
+                leave_keyboard = leave_keyboard.get_empty_keyboard()
+                self.send_msg(user_id, 'Пока!', keyboard=leave_keyboard)
+                return
+            
+            else:
+                user_name = self.group_get_api.users.get(user_id=user_id)[0]['first_name']
+                start_keyboard = VkKeyboard()
+                start_keyboard.add_button('Поиск!', VkKeyboardColor.PRIMARY)
+                start_keyboard.add_button('Избранное', VkKeyboardColor.PRIMARY)
+                start_keyboard = start_keyboard.get_keyboard()
+                self.send_msg(user_id, BotMsg.misunderstand % user_name, keyboard=start_keyboard)
+                return
+        
+            
 
     
