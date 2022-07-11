@@ -7,9 +7,10 @@ from dataclasses import dataclass
 
 from config import group_token, user_token
 
-@dataclass(frozen=True)
+@dataclass()
 class BotMsg():
-    '''Сообщения бота для пользователя'''
+    '''Класс сообщений бота для пользователя'''
+    
     misunderstand: str = 'Я вас не понял %s. Но давайте покажу вам меню!'
     start: str = 'Привет %s! Начнем поиск? Или взглянем кто там у нас уже есть?'
     criterions: str = 'Выберите критерии поиска'
@@ -23,6 +24,12 @@ class BotMsg():
     sex_again: str = 'Нажмите кнопку выбора пола'
     boy: str = 'Выбраны мальчики'
     girl: str = 'Выбраны девочки'
+    minage: str = 'Введите минимальный возраст (от 18 до 99):'
+    minage_select: str = 'Будем искать кандидатов от %s лет'
+    minage_error: str = 'Введите целое число от 18 до 99'
+    maxage: str = 'Введите максимальный возраст (от 18 до 99):'
+    maxage_select: str = 'Будем искать кандидатов до %s лет'
+    maxage_error: str = 'Введите целое число от 18 до 99:'
 
 class VKinder():
     
@@ -40,6 +47,8 @@ class VKinder():
         return event.type == VkEventType.MESSAGE_NEW and event.to_me
     
     def send_msg(self, user_id, message, attachment=None, keyboard=None):
+        '''Функция отправки сообщений пользователю бота'''
+        
         params = {
             'user_id': user_id,
             'message': message,
@@ -50,6 +59,8 @@ class VKinder():
         self.group_api.method('messages.send', params)
 
     def set_search_keyboard(self):
+        '''Функция возвращает клавиатуру "Поиск" бота'''
+        
         search_keyboard = VkKeyboard()
         search_keyboard.add_button('Выбрать город', VkKeyboardColor.PRIMARY)
         search_keyboard.add_button('Выбрать пол', VkKeyboardColor.PRIMARY)
@@ -62,6 +73,8 @@ class VKinder():
         return search_keyboard
     
     def set_start_keyboard(self):
+        '''Функция возвращает стартовую клавиатуру бота'''
+        
         start_keyboard = VkKeyboard()
         start_keyboard.add_button('Поиск!', VkKeyboardColor.PRIMARY)
         start_keyboard.add_button('Избранное', VkKeyboardColor.PRIMARY)
@@ -69,17 +82,32 @@ class VKinder():
         return start_keyboard
     
     def set_sex_keyboard(self):
+        '''Функция возвращает клавиатуру для выбора пола'''
+        
         sex_keyboard = VkKeyboard(one_time=True)
         sex_keyboard.add_button('Он', VkKeyboardColor.PRIMARY)
         sex_keyboard.add_button('Она', VkKeyboardColor.POSITIVE)
         sex_keyboard = sex_keyboard.get_keyboard()
         return sex_keyboard
+    
+    def set_results_keyboard(self):
+        '''Функция возвращает клавиатуру для работы с результатами поиска'''
+        
+        results_keyboard = VkKeyboard(one_time=True)
+        results_keyboard.add_button('Следующий', VkKeyboardColor.PRIMARY)
+        results_keyboard.add_button('В избранное', VkKeyboardColor.PRIMARY)
+        results_keyboard.add_button('В игнор', VkKeyboardColor.PRIMARY)
+        results_keyboard.add_line()
+        results_keyboard.add_button('Назад в главное меню', VkKeyboardColor.PRIMARY)
+        results_keyboard = results_keyboard.get_keyboard()
+        return results_keyboard
         
    
     def handle_start_event(self, event):
         '''Функция отрабатывает стартовые сообщения от пользователя бота
            Если пользователь здоровается или прощается показывает или скрывает меню.
            Если сообщение от пользователя не опознано - тоже показывает меню'''
+        
         if VKinder.is_message_to_bot(event):
             message = event.text.lower()
             user_id = event.user_id
@@ -109,15 +137,13 @@ class VKinder():
             
             else:
                 user_name = self.group_get_api.users.get(user_id=user_id)[0]['first_name']
-                start_keyboard = VkKeyboard()
-                start_keyboard.add_button('Поиск!', VkKeyboardColor.PRIMARY)
-                start_keyboard.add_button('Избранное', VkKeyboardColor.PRIMARY)
-                start_keyboard = start_keyboard.get_keyboard()
-                self.send_msg(user_id, BotMsg.misunderstand % user_name, keyboard=start_keyboard)
+                self.send_msg(user_id, BotMsg.misunderstand % user_name, keyboard=self.set_start_keyboard())
                 return
         
     def set_search_params(self, user_id):
-        self.send_msg(user_id, 'Скоро начнем!', keyboard=self.set_search_keyboard())
+        '''Функция определяет стартовые параметры для поиска'''
+        
+        self.send_msg(user_id, 'Выберите параметры для поиска:', keyboard=self.set_search_keyboard())
         for event in self.longpoll.listen():
             if VKinder.is_message_to_bot(event):
                 message = event.text.lower()
@@ -132,8 +158,16 @@ class VKinder():
                 
                 elif message == 'выбрать пол':
                     self.get_sex(user_id)
+                
+                elif message == 'возраст от':
+                    self.get_min_age(user_id)
+                
+                elif message == 'возраст до':
+                    self.get_max_age(user_id)                    
                     
     def get_city_id(self, user_id):
+        '''Функция возвращает id выбранного для поиска города'''
+        
         self.send_msg(user_id, BotMsg.city, keyboard=self.set_search_keyboard())
         for event in self.longpoll.listen():
             if VKinder.is_message_to_bot(event):
@@ -152,20 +186,44 @@ class VKinder():
                     return city_result[0].get('id')
     
     def get_sex(self, user_id):
+        '''Функция возвращает желаемый пол для поиска'''
+        
         self.send_msg(user_id, BotMsg.sex, keyboard=self.set_sex_keyboard())
         for event in self.longpoll.listen():
             if VKinder.is_message_to_bot(event):
                 if event.text == 'Он':
                     self.send_msg(user_id, BotMsg.boy, keyboard=self.set_search_keyboard())
-                    return event.text
+                    return 2
                 elif event.text == 'Она':
                     self.send_msg(user_id, BotMsg.girl, keyboard=self.set_search_keyboard())
-                    return event.text
+                    return 1
                 else:
                     self.send_msg(user_id, BotMsg.sex_again, keyboard=self.set_sex_keyboard())
-
     
-
-            
+    def get_min_age(self, user_id):
+        '''Функция возвращает минимальный возраст для поиска
+           Возвращает строку'''
+        
+        self.send_msg(user_id, BotMsg.minage)
+        for event in self.longpoll.listen():
+            if VKinder.is_message_to_bot(event):
+                min_age = event.text
+                if min_age.isdigit() and int(min_age) >= 18 and int(min_age) <= 99:
+                    self.send_msg(user_id, BotMsg.minage_select % min_age)
+                    return min_age
+                else:
+                    self.send_msg(user_id, BotMsg.minage_error, keyboard=self.set_search_keyboard())
     
-    
+    def get_max_age(self, user_id):
+        '''Функция возвращает максимальный возраст для поиска
+           Возвращает строку'''
+        
+        self.send_msg(user_id, BotMsg.maxage)
+        for event in self.longpoll.listen():
+            if VKinder.is_message_to_bot(event):
+                max_age = event.text
+                if max_age.isdigit() and int(max_age) >= 18 and int(max_age) <= 99:
+                    self.send_msg(user_id, BotMsg.maxage_select % max_age)
+                    return max_age
+                else:
+                    self.send_msg(user_id, BotMsg.minage_error, keyboard=self.set_search_keyboard())
